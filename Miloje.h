@@ -17,6 +17,7 @@ class Miloje {
 public:
   Miloje(int sp1,int dp1,int sp2,int dp2);
   void pravo(int obrt,int sped);
+  void pravoStepeni(int angle,int sped);
 
 
 private:
@@ -57,6 +58,7 @@ public:
     void Setup();
     void Ctrl(int pin,int state);
     void SetEmAll(int *niz);
+    
 
 private:  
     int states[8]={0,0,0,0,0,0,0,0};
@@ -72,6 +74,7 @@ public:
   void DecodeS(String *strs);
   void DServo(String *strs);
   void DStepper(String *strs);
+  void Send(String *strings,int who);
 private:
   };
 

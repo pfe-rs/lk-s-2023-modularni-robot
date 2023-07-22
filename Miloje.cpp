@@ -45,15 +45,15 @@ void Comu::DServo(String *strs){
 }
 
 void Comu::DStepper(String *strs){
+  int par1=strs[3].toInt();
+  int par2=strs[4].toInt();
   Miloje M1(11,12,7 ,6);
   if(strs[2]=="10")
     {
-    int par1=strs[3].toInt();
-    
-    M1.pravo(1,2000);   
+    M1.pravo(par1,par2);   
     }
     else if(strs[2]=="11"){
-      //M1.pravoStepeni();
+      M1.pravoStepeni(par1,par2);
       ;
       }
 }
@@ -82,7 +82,20 @@ void Comu::DecodeTYPE(String *strs){
     
     }
 }  
+void Comu::Send(String *strings,int who){
+  Serial.begin(9600);
+  int i;
+  String st="ydiyisy";
+  Serial.println(st);
+  for(i=0;i<sizeof(strings);i++)
+  {
+    String st="S"+strings[i];
+    Serial.println(st);
+    
+  }
 
+  
+  }
 void Comu::SERIAL_READ(){
   String str;
   Serial.begin(9600);
@@ -115,17 +128,20 @@ void Comu::SERIAL_READ(){
 }
 /////////////////////////////////////////////
 void Miloje::pravo(int obrt,int sped) {
-   AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+  AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
   stepper1.setMaxSpeed(sped);
   stepper1.setAcceleration(1000.0);
   stepper1.move(obrt*210);
   stepper1.runToPosition();
 }
-/*
-void Miloje::MoveAngle(int angle,int sped){
-  
+
+void Miloje::pravoStepeni(int angle,int sped){
+  AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+  stepper1.setMaxSpeed(sped);
+  stepper1.setAcceleration(1000.0);
+  stepper1.move(angle*(210/360));
+  stepper1.runToPosition();
   }
-*/
 Pan_tilt::Pan_tilt(int p1,int p2) 
 {
   pdown=p1;
@@ -204,3 +220,4 @@ void EightBit::Ctrl(int pin,int state){
   delay(2000);
   
   }
+  
