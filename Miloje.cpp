@@ -7,10 +7,6 @@ int ex_servo1,ex_servo2;//donji pa gornji
 int ex_ultra;
 
 
-int SensorRAW(int pin){
-  return analogRead(pin);
-}
-
 void PinSetter(int dp1,int sp1,int dp2,int sp2,int servoDown,int servoUP,int Ultra){
   ex_dir1=dp1;
   ex_dir2=dp2;
@@ -27,10 +23,8 @@ Miloje::Miloje(int sp1,int dp1,int sp2,int dp2) {
   dir_pin1 = dp1;
   step_pin2 = sp2;
   dir_pin2 = dp2;
-  
-
 }
-Comu::Comu(){;}
+Comu::Comu(){Serial.begin(9600);}
 void Comu::DServo(String *strs){
   Pan_tilt T1(ex_servo1,ex_servo2);
   if(strs[2]=="10"){
@@ -47,22 +41,20 @@ void Comu::DServo(String *strs){
 void Comu::DStepper(String *strs){
   int par1=strs[3].toInt();
   int par2=strs[4].toInt();
-  Miloje M1(11,12,7 ,6);
+  Miloje M1(ex_step_p1,ex_dir1,ex_step_p1,ex_dir2);//ex_dir1,ex_dir2,ex_step_p1,ex_step_p2
   if(strs[2]=="10")
     {
     M1.pravo(par1,par2);   
     }
-    else if(strs[2]=="11"){
-      M1.pravoStepeni(par1,par2);
-      ;
-      }
+  else if(strs[2]=="11"){
+    M1.pravoStepeni(par1,par2);
+    }
 }
 
 void Comu::DecodeM(String *strs){
   if(strs[1]=="S"){
     DServo(strs);
   }
-
   else if(strs[1]=="A"){
     DStepper(strs);
     }
@@ -73,20 +65,13 @@ void Comu::DecodeTYPE(String *strs){
   {
     DecodeM(strs);
   }
-  else if(strs[0]=="S")
-  {
-    ;
-  }
-  else{
-    digitalWrite(7,1);
-    
-    }
+
+
 }  
 void Comu::Send(String *strings,int who){
   Serial.begin(9600);
   int i;
-  String st="ydiyisy";
-  Serial.println(st);
+//  Serial.println(st);
   for(i=0;i<sizeof(strings);i++)
   {
     String st="S"+strings[i];
@@ -105,8 +90,7 @@ void Comu::SERIAL_READ(){
     // read the incoming byte:
     str = Serial.readString();
   }
-//  st=str
-//  Serial.close();
+
   int StringCount = 0;
   while (str.length() > 0)
   {
@@ -123,24 +107,150 @@ void Comu::SERIAL_READ(){
     }
   }
   DecodeTYPE(strs);
-  Serial.println(strs[0]);
+  //Serial.println(strs[0]);
   
 }
 /////////////////////////////////////////////
+/*
+void Miloje::KrivaT(float angle,int sped,int T){
+    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    int omega=angle/T;
+    int L=225;
+    
+    
+    int V_right=(omega*L+2*sped)/2;
+    int V_left=2*sped-V_right;
+
+    int N_left=V_left*T*200;
+    int N_right=V_right*T*200;
+    
+    stepper1.setMaxSpeed(V_right);
+    stepper1.setAcceleration(200);
+    stepper1.move(N_right);
+    
+    stepper2.setMaxSpeed(V_left);
+    stepper2.setAcceleration(200);
+    stepper2.move(N_left);  
+    while((stepper1.distanceToGo() != 0)&&(stepper2.distanceToGo() != 0))
+    {
+      stepper1.run();
+      stepper2.run();
+    }
+    stepper1.stop();
+    stepper2.stop();
+  
+  
+  }*/
+void Miloje::Kriva(float angle,int sped,int d){//
+    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    sped=sped*6;//brzina mm/s
+    int L=225;//razmak medju tockovima
+    float T=d/sped;//d je u mm ti se snadji s
+   // float r=360*d/angle
+   // float d= r*angle;
+  //  float T=d/sped;
+    float omega=angle/T;
+    float r=omega/sped;//radijus velikog kruga
+    
+  //  float V_right=omega*(r+L/2);
+  // float V_left=omega*(r-L/2);
+
+  float V_right=(omega+2*sped)/2;
+  float V_left=V_right-omega*r;
+    
+    int N_left=V_left/6;
+    int N_right=V_right/6;
+    
+    stepper1.setMaxSpeed(V_right);
+    stepper1.setAcceleration(200);
+    stepper1.move(N_right);
+    
+    stepper2.setMaxSpeed(V_left);
+    stepper2.setAcceleration(200);
+    stepper2.move(N_left);  
+    while((stepper1.distanceToGo() != 0)&&(stepper2.distanceToGo() != 0))
+    {
+      stepper1.run();
+      stepper2.run();
+    }
+    stepper1.stop();
+    stepper2.stop();
+ 
+
+
+
+
+
+
+}
+/////////////////////////////////////
+void Miloje::Krivo(int angle){
+    int obrt=9/8*angle;
+    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    int spido=500; 
+    stepper1.setMaxSpeed(spido);
+    stepper1.setAcceleration(200);
+    stepper1.move(obrt);
+    
+    stepper2.setMaxSpeed(spido);
+    stepper2.setAcceleration(200);
+    stepper2.move(-obrt);   
+    int i;
+    while((stepper1.distanceToGo() != 0)&&(stepper2.distanceToGo() != 0)){
+    stepper1.run();
+    stepper2.run();
+    }
+      stepper1.stop();
+  stepper2.stop();  
+  }
+
 void Miloje::pravo(int obrt,int sped) {
-  AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-  stepper1.setMaxSpeed(sped);
-  stepper1.setAcceleration(1000.0);
-  stepper1.move(obrt*210);
-  stepper1.runToPosition();
+    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    sped=sped/5;
+    obrt=-200*obrt;
+    stepper1.setMaxSpeed(sped);
+    stepper1.setAcceleration(800);
+    stepper1.moveTo(obrt);
+    
+    stepper2.setMaxSpeed(sped);
+    stepper2.setAcceleration(800);
+    stepper2.moveTo(obrt);
+    
+  while((stepper1.distanceToGo() != 0)&&(stepper2.distanceToGo() != 0))
+  {
+    stepper1.run();
+    stepper2.run();
+  }
+  stepper1.stop();
+  stepper2.stop();
+
 }
 
-void Miloje::pravoStepeni(int angle,int sped){
-  AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-  stepper1.setMaxSpeed(sped);
-  stepper1.setAcceleration(1000.0);
-  stepper1.move(angle*(210/360));
-  stepper1.runToPosition();
+void Miloje::pravoStepeni(int angle,int sped)
+{
+    int DRIVER;
+    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    int obrt=-200*(angle/360);
+    stepper1.setMaxSpeed(sped);
+    stepper1.setAcceleration(800);
+    stepper1.moveTo(obrt);
+    
+    stepper2.setMaxSpeed(sped);
+    stepper2.setAcceleration(800);
+    stepper2.moveTo(obrt);
+  while((stepper1.distanceToGo() != 0)||(stepper2.distanceToGo() != 0)){
+    stepper1.run();
+    stepper2.run();
+  }
+  stepper1.stop();
+  stepper2.stop();
+  //stepper2.move(angle*(210/360));
+
   }
 Pan_tilt::Pan_tilt(int p1,int p2) 
 {

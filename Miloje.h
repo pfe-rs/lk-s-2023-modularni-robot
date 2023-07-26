@@ -18,6 +18,8 @@ public:
   Miloje(int sp1,int dp1,int sp2,int dp2);
   void pravo(int obrt,int sped);
   void pravoStepeni(int angle,int sped);
+  void Krivo(int angle);
+  void Kriva(float angle,int sped,int d);
 
 
 private:
@@ -25,6 +27,7 @@ private:
   int dir_pin1;
   int step_pin2;
   int dir_pin2;
+
   
 
 };
