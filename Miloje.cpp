@@ -47,11 +47,15 @@ void Comu::DServo(String *strs){
 
 void Comu::DStepper(String *strs){
   int par1=strs[3].toInt();
+//  Serial1.println(isDigit(strs[4]));
   int par2=strs[4].toInt();
-  Miloje M1(ex_step_p1,ex_dir1,ex_step_p1,ex_dir2);//int sp1,int dp1,int sp2,int dp2
+  Serial1.println(par2);
+  Miloje M1(ex_step_p1,ex_dir1,ex_step_p2,ex_dir2);//int sp1,int dp1,int sp2,int dp2
   if(strs[2]=="10")
     {
-    Serial1.println("Decoded right");
+    Serial1.print("Decoded right");
+    Serial1.println(par1);
+    Serial1.println(par2);
     M1.Forward(par1,par2);   
     }
   else if(strs[2]=="11"){
@@ -91,7 +95,7 @@ void Comu::BT(){
   String strs[20];
   if (Serial1.available() > 0) {
     str = Serial1.readString();
-    str = str.substring(0,str.length());
+    str = str.substring(0,str.length()+1);
     Serial1.println(str); 
   }
   int StringCount = 0;
@@ -109,6 +113,14 @@ void Comu::BT(){
       str = str.substring(index+1);
     }
   }
+
+    Serial1.println(strs[0]);
+    Serial1.println(strs[1]);
+    Serial1.println(strs[2]);
+    Serial1.println(strs[3]);
+    Serial1.println("A"+strs[4]+"A");
+
+  
 
   DecodeTYPE(strs);
 }
@@ -152,7 +164,16 @@ void Comu::SERIAL_READ(){
       str = str.substring(index+1);
     }
   }
+    Serial.println(strs[0]);
+    Serial.println(strs[1]);
+    Serial.println(strs[2]);
+    Serial.println(strs[3]);
+    Serial.println(strs[4]);
+
+  
   DecodeTYPE(strs);
+
+
   //Serial.println(strs[0]);
   
 }

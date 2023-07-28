@@ -12,6 +12,8 @@ void setup() {
 
 void loop() 
 {
-  M1.Forward(2,300);
-  //COM1.BT();
+  //M1.Forward(2,300);
+  COM1.BT();
+  //COM1.SERIAL_READ();
+  delay(2000);
 }
