@@ -1,21 +1,20 @@
 #include "Miloje.h"
 #include <AccelStepper.h>
 #include <Servo.h>
+#include <ez_SIPO8_lib.h> 
 
 int ex_dir1,ex_dir2,ex_step_p1,ex_step_p2;
 int ex_servo1,ex_servo2;//donji pa gornji
 int ex_ultra;
 
-
 void PinSetter(int dp1,int sp1,int dp2,int sp2,int servoDown,int servoUP,int Ultra){
   ex_dir1=dp1;
-  ex_dir2=dp2;
   ex_step_p1=sp1;
   ex_step_p2=sp2;
   ex_servo1=servoDown;
   ex_servo2=servoUP;
   ex_ultra=Ultra; 
-  }
+}
 
 
 Miloje::Miloje(int sp1,int dp1,int sp2,int dp2) {
@@ -24,12 +23,20 @@ Miloje::Miloje(int sp1,int dp1,int sp2,int dp2) {
   step_pin2 = sp2;
   dir_pin2 = dp2;
 }
-Comu::Comu(){Serial.begin(9600);}
+
+Comu::Comu() {}
+
+void Comu::Setup() {
+  Serial.begin(9600);
+  Serial1.begin(9600);
+}
+
 void Comu::DServo(String *strs){
   Pan_tilt T1(ex_servo1,ex_servo2);
   if(strs[2]=="10"){
+    Serial.println("Cross ukljucen");
     T1.Cross();
-  }
+}
 
   else if(strs[2]=="11"){
     int par1=strs[3].toInt();
@@ -41,18 +48,29 @@ void Comu::DServo(String *strs){
 void Comu::DStepper(String *strs){
   int par1=strs[3].toInt();
   int par2=strs[4].toInt();
-  Miloje M1(ex_step_p1,ex_dir1,ex_step_p1,ex_dir2);//ex_dir1,ex_dir2,ex_step_p1,ex_step_p2
+  Miloje M1(ex_step_p1,ex_dir1,ex_step_p1,ex_dir2);//int sp1,int dp1,int sp2,int dp2
   if(strs[2]=="10")
     {
-    M1.pravo(par1,par2);   
+    Serial1.println("Decoded right");
+    M1.Forward(par1,par2);   
     }
   else if(strs[2]=="11"){
-    M1.pravoStepeni(par1,par2);
+    M1.Forward_angle(par1,par2);
     }
+  else if(strs[2]=="12"){
+    M1.Spin(par1);
+    }
+ else if(strs[2]=="13"){
+    float param1=strs[3].toFloat();
+    int par3=strs[5].toInt();
+    M1.Curve(param1,par2,par3);
+    }
+    
 }
 
 void Comu::DecodeM(String *strs){
   if(strs[1]=="S"){
+    Serial1.println("USPEHH");
     DServo(strs);
   }
   else if(strs[1]=="A"){
@@ -67,9 +85,37 @@ void Comu::DecodeTYPE(String *strs){
   }
 
 
-}  
+}
+void Comu::BT(){
+  String str;
+  String strs[20];
+  if (Serial1.available() > 0) {
+    str = Serial1.readString();
+    str = str.substring(0,str.length());
+    Serial1.println(str); 
+  }
+  int StringCount = 0;
+  while (str.length() > 0)
+  {
+    int index = str.indexOf(' ');
+    if (index == -1) // No space found
+    {
+      strs[StringCount++] = str;
+      break;
+    }
+    else
+    {
+      strs[StringCount++] = str.substring(0, index);
+      str = str.substring(index+1);
+    }
+  }
+
+  DecodeTYPE(strs);
+}
+
+
 void Comu::Send(String *strings,int who){
-  Serial.begin(9600);
+//  Serial.begin(9600);
   int i;
 //  Serial.println(st);
   for(i=0;i<sizeof(strings);i++)
@@ -83,7 +129,7 @@ void Comu::Send(String *strings,int who){
   }
 void Comu::SERIAL_READ(){
   String str;
-  Serial.begin(9600);
+//  Serial.begin(9600);
   String strs[20];
   if (Serial.available() > 0) 
   {
@@ -110,55 +156,22 @@ void Comu::SERIAL_READ(){
   //Serial.println(strs[0]);
   
 }
-/////////////////////////////////////////////
-/*
-void Miloje::KrivaT(float angle,int sped,int T){
-    AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
-    int omega=angle/T;
-    int L=225;
-    
-    
-    int V_right=(omega*L+2*sped)/2;
-    int V_left=2*sped-V_right;
 
-    int N_left=V_left*T*200;
-    int N_right=V_right*T*200;
-    
-    stepper1.setMaxSpeed(V_right);
-    stepper1.setAcceleration(200);
-    stepper1.move(N_right);
-    
-    stepper2.setMaxSpeed(V_left);
-    stepper2.setAcceleration(200);
-    stepper2.move(N_left);  
-    while((stepper1.distanceToGo() != 0)&&(stepper2.distanceToGo() != 0))
-    {
-      stepper1.run();
-      stepper2.run();
-    }
-    stepper1.stop();
-    stepper2.stop();
-  
-  
-  }*/
-void Miloje::Kriva(float angle,int sped,int d){//
+void Miloje::Curve(float angle,int sped,int d){//
     AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, dir_pin2);
+    angle=angle*3.14/180;
     sped=sped*6;//brzina mm/s
     int L=225;//razmak medju tockovima
     float T=d/sped;//d je u mm ti se snadji s
-   // float r=360*d/angle
-   // float d= r*angle;
-  //  float T=d/sped;
     float omega=angle/T;
     float r=omega/sped;//radijus velikog kruga
     
   //  float V_right=omega*(r+L/2);
   // float V_left=omega*(r-L/2);
 
-  float V_right=(omega+2*sped)/2;
-  float V_left=V_right-omega*r;
+  float V_right=-(omega+2*sped)/2;
+  float V_left=-(V_right-omega*r);
     
     int N_left=V_left/6;
     int N_right=V_right/6;
@@ -186,10 +199,10 @@ void Miloje::Kriva(float angle,int sped,int d){//
 
 }
 /////////////////////////////////////
-void Miloje::Krivo(int angle){
+void Miloje::Spin(int angle){
     int obrt=9/8*angle;
     AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, dir_pin2);
     int spido=500; 
     stepper1.setMaxSpeed(spido);
     stepper1.setAcceleration(200);
@@ -207,9 +220,9 @@ void Miloje::Krivo(int angle){
   stepper2.stop();  
   }
 
-void Miloje::pravo(int obrt,int sped) {
+void Miloje::Forward(int obrt,int sped) {
     AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, dir_pin2);
     sped=sped/5;
     obrt=-200*obrt;
     stepper1.setMaxSpeed(sped);
@@ -230,11 +243,11 @@ void Miloje::pravo(int obrt,int sped) {
 
 }
 
-void Miloje::pravoStepeni(int angle,int sped)
+void Miloje::Forward_angle(int angle,int sped)
 {
     int DRIVER;
     AccelStepper stepper1(AccelStepper::DRIVER, step_pin1, dir_pin1);
-    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, step_pin2);
+    AccelStepper stepper2(AccelStepper::DRIVER, step_pin2, dir_pin2);
     int obrt=-200*(angle/360);
     stepper1.setMaxSpeed(sped);
     stepper1.setAcceleration(800);
